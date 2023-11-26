@@ -1,0 +1,103 @@
+ArrayList<Rectangle> rectangles;
+
+void setup() {
+  size(900, 900);
+  background(0);
+  rectangles = new ArrayList<Rectangle>();
+  generateRectangles();
+}
+
+void draw() {
+  for (Rectangle rect : rectangles) {
+    rect.draw();
+  }
+}
+
+void generateRectangles() {
+  int numRectangles = 100; // 长方形的数量
+  int rectSizeMin = 20; // 长方形的最小边长
+  int rectSizeMax = 500; // 长方形的最大边长
+
+  for (int i = 0; i < numRectangles; i++) {
+    int rectWidth = int(random(rectSizeMin, rectSizeMax));
+    int rectHeight = int(random(rectSizeMin, rectSizeMax));
+
+    // 随机生成长方形的位置
+    int x = int(random(width - rectWidth));
+    int y = int(random(height - rectHeight));
+
+    // 检测长方形是否与已有的长方形重叠
+    boolean overlapping = false;
+    for (Rectangle rect : rectangles) {
+      if (rect.intersects(x, y, rectWidth, rectHeight)) {
+        overlapping = true;
+        break;
+      }
+    }
+
+    // 如果重叠，则重新生成长方形
+    if (overlapping) {
+      i--;
+      continue;
+    }
+
+    // 创建长方形对象并添加到列表中
+    Rectangle rect = new Rectangle(x, y, rectWidth, rectHeight);
+    rectangles.add(rect);
+  }
+}
+
+class Rectangle {
+  int x, y, width, height;
+  color fillColor;
+
+  Rectangle(int x, int y, int width, int height) {
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    fillColor = color(0);
+  }
+
+  void draw() {
+    fill(fillColor);
+    noStroke();
+    rect(x, y, width, height);
+  }
+
+  boolean intersects(int otherX, int otherY, int otherWidth, int otherHeight) {
+    // 检测长方形是否与另一个长方形相交
+    if (x + width > otherX && otherX + otherWidth > x && y + height > otherY && otherY + otherHeight > y) {
+      return true;
+    }
+    return false;
+  }
+
+void fillRandomColor() {
+  int randomColor = int(random(3));
+  switch (randomColor) {
+    case 0:
+      fillColor = color(0, 150, 0); // 绿色
+      break;
+    case 1:
+      fillColor = color(255, 200, 0); // 黄色
+      break;
+    case 2:
+      fillColor = color(255, 100, 0); // 橙色
+      break;
+  }
+}
+
+  boolean isMouseOver() {
+    // 检测鼠标是否位于长方形上方
+    return mouseX > x && mouseX < x + width && mouseY > y && mouseY < y + height;
+  }
+}
+
+void mouseMoved() {
+  for (Rectangle rect : rectangles) {
+    if (rect.isMouseOver()) {
+      rect.fillRandomColor();
+    }
+  }
+}
