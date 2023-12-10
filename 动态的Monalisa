@@ -1,0 +1,32 @@
+PImage img;  
+int circleSize = 25;// 圆的直径
+
+void setup() {
+  size(600, 800); 
+  img = loadImage("monalisa.jpg");  // 蒙娜丽莎图像
+  img.resize(width, height);  
+  ellipseMode(RADIUS);  // 设置椭圆模式为半径模式
+  noStroke();  
+  background(255); 
+}
+
+void draw() {
+  background(255);  // 绘制前清空画布
+  for (int x = 0; x < width; x += circleSize) {
+    for (int y = 0; y < height; y += circleSize) {
+      // 获取当前帧的时间
+      float time = millis() / 500.0;
+      // 根据时间创建动态效果
+      float radiusOffset = sin(time + x * 0.01 + y * 0.01) * 10;
+          // 获取当前像素的颜色
+      int pixelColor = img.get(x, y);
+      // 提取红、绿、蓝三个通道的亮度值
+      float brightnessValue = brightness(pixelColor);
+      // 根据亮度值计算圆的半径
+      float radius = map(brightnessValue, 0, 255, circleSize / 2, 0) + radiusOffset;
+      // 根据像素的颜色绘制圆形
+      fill(pixelColor);
+      ellipse(x, y, radius, radius);
+    }
+  }
+}
