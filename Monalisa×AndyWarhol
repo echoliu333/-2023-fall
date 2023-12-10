@@ -1,0 +1,72 @@
+PImage inputImage;  // 输入图片
+int pixelSize = 10;  // 像素尺寸
+
+void setup() {
+  size(400, 560);
+  inputImage = loadImage("monalisa.jpg"); 
+  inputImage.resize(width, height);
+  image(inputImage, 0, 0);
+  noLoop();
+}
+
+void draw() {
+  for (int y = 0; y < height; y += pixelSize) {
+    for (int x = 0; x < width; x += pixelSize) {
+      // 获取像素块内的颜色
+      color pixelColor = getAverageColor(x, y, pixelSize);      
+      // 对颜色进行转换
+      color transformedColor = applyAndyWarholStyle(pixelColor);
+      
+      // 绘制像素块
+      fill(transformedColor);
+      rect(x, y, pixelSize, pixelSize);
+    }
+  }
+}
+
+color getAverageColor(int x, int y, int size) {
+  // 计算像素块内所有像素的平均颜色
+  float r = 0;
+  float g = 0;
+  float b = 0;
+  
+  for (int i = x; i < x + size; i++) {
+    for (int j = y; j < y + size; j++) {
+      // 获取像素颜色值
+      color pixelColor = inputImage.get(i, j);
+      r += red(pixelColor);
+      g += green(pixelColor);
+      b += blue(pixelColor);
+    }
+  }
+  
+  // 计算平均颜色
+  r /= (size * size);
+  g /= (size * size);
+  b /= (size * size);
+  
+  // 创建平均颜色对象
+  return color(r, g, b);
+}
+
+color applyAndyWarholStyle(color pixelColor) {
+  // 安迪·沃霍尔的颜色转换算法
+  float r = red(pixelColor);
+  float g = green(pixelColor);
+  float b = blue(pixelColor);
+  
+  // 根据特定风格进行颜色转换
+  // 根据需要调整颜色转换的算法和参数
+  float avg = (r + g + b) / 3;
+  if (avg>88){
+  r = constrain(avg*3, 0, 255);
+  g = constrain(avg * 0.5, 0, 255);
+  b = constrain(avg * 0.5, 0, 255);
+  }
+  else{
+    r = constrain(avg*1, 0, 255);
+  g = constrain(avg *1.5, 0, 255);
+  b = constrain(avg * 2, 0, 255);
+  }
+  return color(r, g, b);
+}
