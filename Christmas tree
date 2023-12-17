@@ -1,0 +1,112 @@
+import controlP5.*;
+
+ControlP5 cp5;
+
+int numLayers = 7; // Number of layers in the vase
+float layerHeight = 20; // Height of each layer
+float maxRadius = 100; // Maximum radius of the vase
+float vaseHeight = 140; // Total height of the vase
+int thetaResolution = 360; // Angular resolution
+int zResolution = 100; // Vertical resolution
+float waveAmplitude = 10; // Amplitude of the wave pattern
+float waveFrequency = 0.2;
+void setup() {
+  size(800, 600, P3D);
+    smooth(8); 
+  cp5 = new ControlP5(this);
+
+  // Create sliders
+  cp5.addSlider("numLayers")
+     .setPosition(20, 20)
+     .setRange(1, 20)
+     .setValue(7);
+  
+  cp5.addSlider("layerHeight")
+     .setPosition(20, 60)
+     .setRange(5, 50)
+     .setValue(20);
+  
+  cp5.addSlider("maxRadius")
+     .setPosition(20, 100)
+     .setRange(50, 200)
+     .setValue(100);
+  
+  cp5.addSlider("vaseHeight")
+     .setPosition(20, 140)
+     .setRange(100, 300)
+     .setValue(140);
+  
+  hint(DISABLE_DEPTH_TEST);
+    cp5.addSlider("waveAmplitude")
+     .setPosition(20, 180)
+     .setRange(0, 30)
+     .setValue(10);
+
+  cp5.addSlider("waveFrequency")
+     .setPosition(20, 220)
+     .setRange(0, 1)
+     .setValue(0.2);
+     
+       cp5.addColorPicker("strokeColor")
+     .setPosition(20, 260)
+     .setColorValue(color(100, 100, 255)); 
+
+  cp5.addColorPicker("fillColor")
+     .setPosition(20, 320)
+     .setColorValue(color(180, 180, 255, 100));
+}
+
+void draw() {
+  background(255);
+  lights();
+   pointLight(255, 255, 255, width/2, height/2, 200);
+  
+  pushMatrix();
+  translate(width/2, height/2);
+  rotateX(-QUARTER_PI);
+  rotateY(frameCount * 0.01);
+  
+  drawVase();
+  popMatrix();
+    camera();
+  cp5.draw();
+}
+
+void drawVase() {
+  float angleStep = TWO_PI / thetaResolution;
+  float zStep = vaseHeight / zResolution;
+
+  int pickedStrokeColor = cp5.get(ColorPicker.class, "strokeColor").getColorValue();
+  int pickedFillColor = cp5.get(ColorPicker.class, "fillColor").getColorValue();
+
+  stroke(pickedStrokeColor);
+  fill(pickedFillColor);
+  
+  for (int i = 0; i < zResolution; i++) {
+    float z = i * zStep;
+    float radius = maxRadius - (z * (maxRadius / vaseHeight)); 
+    if (i % (int(layerHeight / zStep)) == 0) {
+      radius += sin(i * waveFrequency) * waveAmplitude; radius += 10; 
+    }
+    
+    beginShape(TRIANGLE_STRIP);
+    for (int j = 0; j <= thetaResolution; j++) {
+      float theta = j * angleStep;
+      float x = radius * cos(theta);
+      float y = radius * sin(theta);
+      vertex(x, y, z);
+      
+      float nextZ = z + zStep;
+      float nextRadius = maxRadius - (nextZ * (maxRadius / vaseHeight));
+      
+      if ((i+1) % (int(layerHeight / zStep)) == 0) {
+        nextRadius += 10; 
+      }
+      
+      float nextX = nextRadius * cos(theta);
+      float nextY = nextRadius * sin(theta);
+      vertex(nextX, nextY, nextZ);
+    }
+    endShape();
+  }
+}
