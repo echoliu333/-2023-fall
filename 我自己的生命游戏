@@ -1,0 +1,97 @@
+int cols, rows;
+int cellSize = 10;
+Cell[][] grid;
+boolean[][] nextGrid;
+
+void setup() {
+  size(800, 600);
+  cols = width / cellSize;
+  rows = height / cellSize;
+  grid = new Cell[cols][rows];
+  nextGrid = new boolean[cols][rows];
+  // 初始化细胞
+  for (int i = 0; i < cols; i++) {
+    for (int j = 0; j < rows; j++) {
+      grid[i][j] = new Cell();
+    }
+  }
+}
+
+void draw() {
+    fill(255, 255, 255, 50);
+  rect(0, 0, width, height);
+  for (int i = 0; i < cols; i++) {
+    for (int j = 0; j < rows; j++) {
+      grid[i][j].display(i * cellSize, j * cellSize, cellSize);
+    }
+  }
+  updateGrid();
+}
+
+void mousePressed() {
+  int i = mouseX / cellSize;
+  int j = mouseY / cellSize;
+  if (i >= 0 && i < cols && j >= 0 && j < rows) {
+    grid[i][j].alive = !grid[i][j].alive;
+    grid[i][j].age = 0;
+  }
+}
+
+void updateGrid() {
+  for (int i = 0; i < cols; i++) {
+    for (int j = 0; j < rows; j++) {
+      int neighbors = countNeighbors(i, j);
+      nextGrid[i][j] = grid[i][j].checkRules(neighbors);
+    }
+  }
+  // 更新网格
+  for (int i = 0; i < cols; i++) {
+    for (int j = 0; j < rows; j++) {
+      if (grid[i][j].alive) grid[i][j].age++;
+      else grid[i][j].age = 0;
+      grid[i][j].alive = nextGrid[i][j];
+    }
+  }
+}
+
+int countNeighbors(int x, int y) {
+  int count = 0;
+  for (int i = -1; i <= 1; i++) {
+    for (int j = -1; j <= 1; j++) {
+      int col = (x + i + cols) % cols;
+      int row = (y + j + rows) % rows;
+      if (grid[col][row].alive) {
+        count++;
+      }
+    }
+  }
+  if (grid[x][y].alive) {
+    count--;
+  }
+  return count;
+}
+
+class Cell {
+  boolean alive = random(1) < 0.5;
+  int age = 0;
+
+  boolean checkRules(int neighbors) {
+    if (alive) {
+      return neighbors == 2 || neighbors == 3;
+    } else {
+      return neighbors == 3;
+    }
+  }
+
+  void display(int x, int y, int radius) {
+  if (alive) {
+      // 改变亮度来表示生命周期
+      float brightness = map(age, 0, 100, 100, 255);
+      fill(0, 100, brightness);  // 暗蓝色调
+    } else {
+      fill(255, 255, 255, 50); // 细胞死亡时的颜色更加透明
+    }
+    noStroke();
+    ellipse(x, y, radius * 2, radius * 2);
+  }
+}
