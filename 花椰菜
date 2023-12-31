@@ -1,0 +1,38 @@
+float angleChange = 0; // 定义一个全局变量来改变角度
+
+void setup() {
+  size(800, 800);
+  colorMode(HSB);
+}
+
+void draw() {
+  background(255);
+  angleChange += 0.01; // 每帧改变角度
+  drawBroccoli(width / 2, height, height / 4, angleChange); // 使用改变的角度
+}
+
+void drawBroccoli(float x, float y, float len, float angle) {
+  float newLen = len * 0.7;
+  float angleOffset = PI / 4 + sin(angleChange) * PI / 8; // 角度偏移随时间变化
+
+  // 使用绿色调，亮度和饱和度随长度变化
+  float hue = 85; // 绿色调
+  float saturation = 100 - len * 0.8; // 饱和度随长度变化
+  float brightness = 60 + len * 0.4; // 亮度随长度变化
+  stroke(hue, saturation, brightness); 
+  strokeWeight(max(1, len / 15));
+
+  float x2 = x + cos(angle) * len;
+  float y2 = y - sin(angle) * len;
+
+  line(x, y, x2, y2);
+
+  if (len > 2) { // 终止条件
+    drawBroccoli(x2, y2, newLen, angle - angleOffset); // 左分支
+    drawBroccoli(x2, y2, newLen, angle + angleOffset); // 右分支
+  }
+}
+void mouseMoved() {
+  // 使用鼠标位置来控制角度变化速度
+  angleChange += map(mouseX, 0, width, -0.05, 0.05);
+}
