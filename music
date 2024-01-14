@@ -1,0 +1,333 @@
+import controlP5.*;
+
+import java.util.concurrent.TimeUnit;
+import ddf.minim.*;
+
+Minim minim;
+int STAGE_WIDTH = 700;
+int STAGE_HEIGHT = 600;
+int NB_POINTS = 15000;
+float FINAL_SPHERE_RADIUS = 1200;
+float NOISE_SPHERE_RADIUS = 100;
+float MAX_SPEED_NOISE = 0.025;
+float MIN_FREQ_NOISE = 50;
+float MAX_FREQ_NOISE = 300;
+float GOLDEN_RATIO = (sqrt(5)+1)/2 - 1;
+float GOLDEN_ANGLE = GOLDEN_RATIO*TWO_PI;
+float h, n;
+float minSphereRadius = 10;
+float zoom = .1;
+float rotX = 0;
+float rotY = 0;
+float noiseSpeedX = random(MAX_SPEED_NOISE);
+float noiseSpeedY = random(MAX_SPEED_NOISE);
+float noiseSpeedZ = random(MAX_SPEED_NOISE);
+float noiseFreqX = random(MIN_FREQ_NOISE, MAX_FREQ_NOISE);
+float noiseFreqY = random(MIN_FREQ_NOISE, MAX_FREQ_NOISE);
+float noiseFreqZ = random(MIN_FREQ_NOISE, MAX_FREQ_NOISE);
+myVector tabNoise[];
+
+PGraphics pg;
+int index = 0;
+Music[] musics = new Music[3];
+
+ControlP5 cp5;
+float R = 200, G = 100, B = 100;
+int count = 0;
+long lastClickTime = 0;
+Slider sliderR, sliderG, sliderB;
+boolean isShowSlider = false;
+
+void setup() {
+  size(400, 600, P3D);
+
+  background(0);
+  noStroke();
+  initialize();
+  smooth(200);
+  minim = new Minim(this);
+
+  musics[0] = new Music("trip.mp3", "Trip", "flame tree");
+  musics[1] = new Music("East of Eden1.mp3", "East of Eden", "Zella Day");
+  musics[2] = new Music("hey.wav", "Hey", "unknow");
+
+  pg = createGraphics(width, height);
+
+  cp5 = new ControlP5(this);
+
+  // 添加滑动条
+  sliderR = cp5.addSlider("color R")
+    .setPosition(100, 300)
+    .setWidth(200)
+    .setRange(0, 255)
+    .setValue(R)
+    .hide();
+
+  sliderG = cp5.addSlider("color G")
+    .setPosition(100, 320)
+    .setWidth(200)
+    .setRange(0, 255)
+    .setValue(G)
+    .hide();
+
+  sliderB = cp5.addSlider("color B")
+    .setPosition(100, 340)
+    .setWidth(200)
+    .setRange(0, 255)
+    .setValue(B)
+    .hide();
+
+  // 添加下拉框
+  DropdownList d = cp5.addDropdownList("dropdown")
+    .setPosition(100, 20)
+    .setWidth(200)
+    .addItem(musics[0].name, 1)
+    .addItem(musics[1].name, 2)
+    .addItem(musics[2].name, 3)
+    .addItem("...", 4)
+    .setCaptionLabel("Music");
+
+  d.setOpen(false);
+}
+
+void initialize() {
+  int myX, myY, myZ;
+  tabNoise = new myVector[NB_POINTS];
+  for (int i = 1; i < NB_POINTS; ++i) {
+    float longitude = GOLDEN_ANGLE*i;
+    longitude /= TWO_PI;
+    longitude -= floor(longitude);
+    longitude *= TWO_PI;
+    if (longitude > PI) {
+      longitude -= TWO_PI;
+    }
+    float latitude = asin(-1 + 2*i/(float)NB_POINTS);
+    myX = (int)(NOISE_SPHERE_RADIUS * cos(latitude) * cos(longitude));
+    myY = (int)(NOISE_SPHERE_RADIUS * cos(latitude) * sin(longitude));
+    myZ = (int)(NOISE_SPHERE_RADIUS * sin(latitude) * sin(latitude));
+    tabNoise[i] = new myVector(myX, myY, myZ);
+    tabNoise[i].latitude = latitude;
+    tabNoise[i].longitude = longitude;
+  }
+}
+
+void draw() {
+  background(0);
+
+  push();
+  float mr = musics[index].music.right.level();
+  float ml = musics[index].music.left.level();
+  float mm = musics[index].music.mix.level();
+  scale(zoom);
+  translate(width/2/zoom, height/3/zoom);
+  float rY = mouseX * TWO_PI / STAGE_WIDTH;
+  float rX = mouseY * TWO_PI / STAGE_HEIGHT;
+  rotateY(rY);
+  rotateX(rX);
+  for (int i = 1; i < NB_POINTS; i++) {
+    n = noise(tabNoise[i].x/noiseFreqX+mr*1.2, tabNoise[i].y/noiseFreqY+ml*1.2, tabNoise[i].z/noiseFreqZ+mm*1.2);
+    stroke(R, G, B);
+    strokeWeight(5);
+    pushMatrix();
+    rotateY(tabNoise[i].longitude);
+    rotateZ(-tabNoise[i].latitude);
+    point(minSphereRadius + n*(FINAL_SPHERE_RADIUS-minSphereRadius), 10, 10);
+    popMatrix();
+  }
+  pop();
+
+  pg.beginDraw();
+  pg.background(0);
+  pg.noFill();
+  pg.stroke(255);
+  pg.ellipse(width / 2, 500, 80, 80);
+
+  pg.fill(255);
+  if (musics[index].music.isPlaying()) {
+    pg.rect(width / 2 - 15, 480, 10, 40, 5);
+    pg.rect(width / 2 + 5, 480, 10, 40, 5);
+  } else {
+    pg.triangle(width / 2 - 10, 480, width / 2 - 10, 520, width / 2 + 20, 500);
+  }
+
+  pg.line(width / 2 - 125, 490, width / 2 - 125, 510);
+  pg.line(width / 2 + 125, 490, width / 2 + 125, 510);
+  pg.fill(255);
+  pg.triangle(width / 2 - 125, 500, width / 2 - 100, 490, width / 2 - 100, 510);
+  pg.triangle(width / 2 + 125, 500, width / 2 + 100, 490, width / 2 + 100, 510);
+  pg.textSize(24);
+  pg.fill(255);
+  pg.text(musics[index].name, 50, 380);
+  pg.textSize(18);
+  pg.fill(200);
+  pg.text(musics[index].author, 50, 405);
+  pg.stroke(200);
+
+  float count = musics[index].music.length();
+  float current = musics[index].music.position();
+  float rate = current / count;
+  float w = width - 50 - 50;
+
+  pg.line(50, 430, width - 50, 430);
+  pg.textSize(14);
+  pg.text(musics[index].currentTime(), 48, 450);
+  pg.stroke(255);
+  pg.line(50, 430, 50 + (rate * w), 430);
+  pg.fill(255);
+  pg.ellipse(50 + (rate * w), 430, 5, 5);
+  pg.text(musics[index].countTime(), width - 80, 450);
+
+  pg.noFill();
+  pg.stroke(255);
+  pg.ellipse(70, 320, 20, 20);
+  pg.ellipse(65, 330, 20, 20);
+  pg.ellipse(75, 330, 20, 20);
+
+  pg.endDraw();
+  image(pg, 0, 0);
+}
+
+void mousePressed() {
+
+  long now = millis();
+  if (now - lastClickTime < 500) {
+    // Double Click
+    minSphereRadius = 10;
+    noiseSpeedX = random(MAX_SPEED_NOISE);
+    noiseSpeedY = random(MAX_SPEED_NOISE);
+    noiseSpeedZ = random(MAX_SPEED_NOISE);
+    noiseFreqX = random(MIN_FREQ_NOISE, MAX_FREQ_NOISE);
+    noiseFreqY = random(MIN_FREQ_NOISE, MAX_FREQ_NOISE);
+    noiseFreqZ = random(MIN_FREQ_NOISE, MAX_FREQ_NOISE);
+    zoom += .1;
+  } else {
+    // Single Click
+    lastClickTime = now;
+
+    float x = mouseX;
+    float y = mouseY;
+    if (dist(x, y, width / 2, 500) <= 40) { // play / pause
+      if (musics[index].music.isPlaying()) {
+        musics[index].pause();
+      } else {
+        musics[index].play();
+      }
+    } else if (dist(x, y, width / 2 - 100, 500) <= 20) { // prev
+      index -= 1;
+      if (index < 0) {
+        index = musics.length - 1;
+      }
+      stopAll();
+      musics[index].play();
+    } else if (dist(x, y, width / 2 + 100, 500) <= 20) { // next
+      index = (index + 1) % musics.length;
+      stopAll();
+      musics[index].play();
+    } else if (dist(x, y, 71.0, 329.0) <= 15) { // color
+      if (isShowSlider) {
+        sliderR.hide();
+        sliderG.hide();
+        sliderB.hide();
+      } else {
+        sliderR.show();
+        sliderG.show();
+        sliderB.show();
+      }
+      isShowSlider = !isShowSlider;
+    }
+  }
+}
+
+void keyPressed() {
+  if (key == 'r' || key == 'R') {
+    if (isShowSlider) {
+      sliderR.hide();
+      sliderG.hide();
+      sliderB.hide();
+    } else {
+      sliderR.show();
+      sliderG.show();
+      sliderB.show();
+    }
+    isShowSlider = !isShowSlider;
+  }
+}
+
+void stopAll() {
+  for (int i = 0; i < musics.length; i++) {
+    musics[i].stop();
+  }
+}
+
+class myVector extends PVector {
+  myVector (float p_x, float p_y, float p_h) {
+    super(p_x, p_y, p_h);
+  }
+  float longitude;
+  float latitude;
+}
+
+class Music {
+  AudioPlayer music;
+  String name;
+  String author;
+
+  Music(String path, String name, String author) {
+    this.music = minim.loadFile(dataPath(path), 1024);
+    this.name = name;
+    this.author = author;
+  }
+
+  String countTime() {
+    long milliseconds = this.music.length();
+    long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds) % 60;
+    long seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds) % 60;
+
+    return String.format("%02d:%02d", minutes, seconds);
+  }
+
+  String currentTime() {
+    long milliseconds = this.music.position();
+    long minutes = TimeUnit.MILLISECONDS.toMinutes(milliseconds) % 60;
+    long seconds = TimeUnit.MILLISECONDS.toSeconds(milliseconds) % 60;
+
+    return String.format("%02d:%02d", minutes, seconds);
+  }
+
+  void stop() {
+    music.rewind();
+    music.pause();
+  }
+
+  void pause() {
+    music.pause();
+  }
+
+  void play() {
+    music.loop();
+  }
+}
+
+void controlEvent(ControlEvent event) {
+  count++;
+  if (count <= 3) {
+    return;
+  }
+  if (event.isFrom("dropdown")) {
+    int selectedItem = int(event.getValue());
+    if (selectedItem != musics.length) {
+      index = selectedItem;
+      stopAll();
+      musics[index].play();
+    }
+  }
+  if (event.isFrom("color R")) {
+    R = int(event.getValue());
+  }
+  if (event.isFrom("color G")) {
+    G = int(event.getValue());
+  }
+  if (event.isFrom("color B")) {
+    B = int(event.getValue());
+  }
+}
